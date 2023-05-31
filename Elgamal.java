@@ -67,10 +67,10 @@ public class Elgamal {
         // }
         try {
             //Convert file to byte array
-            byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath));
+            byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath2));
             //Set output path
-            FileOutputStream output = new FileOutputStream(outputFilePath);
-            FileOutputStream deOut = new FileOutputStream(decryptFilePath);
+            FileOutputStream output = new FileOutputStream(outputFilePath2);
+            FileOutputStream deOut = new FileOutputStream(decryptFilePath2);
 
 
             System.out.println();
@@ -81,7 +81,7 @@ public class Elgamal {
 
             //decrypt
             byte[] decrypt_bytes = Files.readAllBytes(Paths.get(outputFilePath));
-            byte[] message_byte = decryption(decrypt_bytes, p, pk);
+            byte[] message_byte = decryption(decrypt_bytes, p, privatekey);
             // for(byte m: message_byte){
             //     System.out.print(m);
             // }
@@ -204,7 +204,7 @@ public class Elgamal {
         while(true){
             p = new BigInteger(len, secureRandom);
             // check prime number
-            if(p.compareTo(start) >= 0 && isPrimeNumber(p)){
+            if(p.compareTo(start) >= 0 && isPrimeNumber(p) && p.compareTo(BigInteger.valueOf(255)) >= 0){
                 break;
             } 
         }
@@ -375,7 +375,7 @@ public class Elgamal {
         return cipher_byte;
     }
 
-    public static byte[] decryption(byte[] cipher_bytes, BigInteger p, BigInteger publicKey){
+    public static byte[] decryption(byte[] cipher_bytes, BigInteger p, BigInteger privateKey){
         // byte[] arrayA = new byte[1];
         // byte[] arrayB = new byte[cipher_bytes.length - 1];
         System.out.println("decrypt");
@@ -422,11 +422,10 @@ public class Elgamal {
 
             // System.out.println();
             // x = b / a;
-            a = modPow(a, publicKey, p);
+            a = modPow(a, privateKey, p);
             a = a.modInverse(p);
             // System.out.println("a^-1 = "+a);
             BigInteger x = (b.multiply(a)).mod(p);
-            // System.out.println("x = " + x);
 
             int xTemp = Integer.valueOf(x.toString());
             // System.out.print(x + " ");
@@ -434,18 +433,20 @@ public class Elgamal {
                 xTemp = -(xTemp - 127);
             }
             
-            System.out.print(xTemp + " ");
             // System.out.println();
             // System.out.println("m = "+message);
             // System.out.println("=======================================");
-            plainList.add(xTemp);
+            // System.out.println("x " +Integer.valueOf(x.toString()));
+            plainList.add(Integer.valueOf(x.toString()));
             
             // change plain text range back (byte -128 to 127)
         }
-        // System.out.println();
+        System.out.println();
+        System.out.println("decrypt byte");
         byte[] plain_bytes = new byte[plainList.size()];
         for(int i = 0; i<plain_bytes.length; i++){
             plain_bytes[i] = plainList.get(i).byteValue();
+            System.out.print(plain_bytes[i] + " ");
         }
 
         return plain_bytes;
