@@ -2,6 +2,8 @@ package AsymmeticEncryption;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class endetest {
@@ -32,7 +34,7 @@ public class endetest {
         BigInteger publickey = genPublicKey(prime, generator, privatekey);
         System.out.println("Public key " + publickey);
 
-        String s = "fuk u crypto";
+        String s = "This is Elgamal Encryption Decryption Test";
         byte[] s_byte = s.getBytes();
         
         System.out.println("\nstring bytes >>>>>>>>");
@@ -41,8 +43,57 @@ public class endetest {
         }
         System.out.println("\n<<<<<<<< string bytes");
 
+        //Encryption
+        List<Integer> outList = new ArrayList<Integer>();
 
+        for (byte x : s_byte) {
+            BigInteger k = generateK(prime);
+            System.out.println("k = "+ k);
 
+            //a
+            // BigInteger a = generator.modPow(k, prime);
+            BigInteger a = modPow(generator, k, prime);
+            System.out.println("a = " + a);
+            System.out.println();
+
+            //b
+            BigInteger y_pow_k = publickey.modPow(k, prime);
+
+            System.out.println("y_pow_k " + y_pow_k);
+            System.out.println("x " + x);
+    
+            BigInteger b = (y_pow_k.multiply(BigInteger.valueOf(x))).mod(prime);
+            System.out.println("b = " + b);
+            System.out.println();
+
+            // x = b / a^u mod p
+            a = a.modPow(privatekey, prime);
+            System.out.println("a^u = " + a);
+            a = a.modInverse(prime);
+            System.out.println("aInvert = " + a);
+
+            BigInteger plain_outByte = (b.multiply(a)).mod(prime);
+
+            System.out.println("plain_outByte = "+plain_outByte);
+            outList.add(plain_outByte.intValue());
+            System.out.println();
+        }
+
+        byte[] outByte = new byte[outList.size()];
+        System.out.println("outByte " + outByte.length);
+        for (int i = 0; i < outList.size(); i++) {
+            outByte[i] = outList.get(i).byteValue();
+        }
+
+        //Decryption
+        for (byte b : outByte) {
+            System.out.print(b + " ");
+        }
+
+        String decrypString = new String(outByte);
+        System.out.println("\ndecryp String = " + decrypString);
+
+        /* 
         BigInteger k = generateK(prime);
         System.out.println("k = "+ k);
 
@@ -94,6 +145,7 @@ public class endetest {
 
         System.out.println("x = "+x);
         System.out.println("x2 = "+x2);
+        */
 
     }
 
