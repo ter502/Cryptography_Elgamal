@@ -46,9 +46,17 @@ public class endetest {
         BigInteger k = generateK(prime);
         System.out.println("k = "+ k);
 
+        BigInteger k2 = generateK(prime);
+        System.out.println("k2 = "+ k2);
+
         //a
-        BigInteger a = generator.modPow(k, prime);
+        // BigInteger a = generator.modPow(k, prime);
+        BigInteger a = modPow(generator, k, prime);
         System.out.println("a = " + a);
+        System.out.println();
+
+        BigInteger a2 = generator.modPow(k2, prime);
+        System.out.println("a2 = " + a2);
         System.out.println();
 
         //b
@@ -61,6 +69,15 @@ public class endetest {
         System.out.println("b = " + b);
         System.out.println();
 
+        BigInteger y_pow_k2 = publickey.modPow(k2, prime);
+
+        System.out.println("y_pow_k2 " + y_pow_k2);
+        System.out.println("s_byte[1] " + s_byte[1]);
+
+        BigInteger b2 = (y_pow_k2.multiply(BigInteger.valueOf(s_byte[1]))).mod(prime);
+        System.out.println("b2 = " + b2);
+        System.out.println();
+
         a = a.modPow(privatekey, prime);
         System.out.println("a^u = " + a);
         a = a.modInverse(prime);
@@ -68,7 +85,16 @@ public class endetest {
 
         BigInteger x = (b.multiply(a)).mod(prime);
 
-        System.out.println(x);
+        a2 = a2.modPow(privatekey, prime);
+        System.out.println("a2^u = " + a2);
+        a2 = a2.modInverse(prime);
+        System.out.println("a2Invert = " + a2);
+
+        BigInteger x2 = (b2.multiply(a2)).mod(prime);
+
+        System.out.println("x = "+x);
+        System.out.println("x2 = "+x2);
+
     }
 
     public static BigInteger pow(BigInteger base, int n){
@@ -180,7 +206,7 @@ public class endetest {
         while(true){
             p = new BigInteger(len, secureRandom);
             // check prime number
-            if(p.compareTo(start) >= 0 && isPrimeNumber(p)){
+            if(p.compareTo(start) >= 0 && isPrimeNumber(p) && p.compareTo(BigInteger.valueOf(255)) >= 0){
                 break;
             } 
         }
