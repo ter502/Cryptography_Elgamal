@@ -1,10 +1,12 @@
 package AsymmeticEncryption;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
@@ -20,10 +22,10 @@ import java.util.Scanner;
 import javax.swing.text.Utilities;
 
 public class Elgamal {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ClassNotFoundException {
         //input file path
         String inputFilePath = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\test.txt";
-        String inputFilePath2 = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\picture.jpg";
+        String inputFilePath2 = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\mona_lisa_lowquality.jpg";
         
         //output file path
         String outputFilePath = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\test_encryp.txt";
@@ -67,28 +69,28 @@ public class Elgamal {
         // }
         try {
             //Convert file to byte array
-            byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath2));
+            byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath));
             //Set output path
-            FileOutputStream output = new FileOutputStream(outputFilePath2);
-            FileOutputStream deOut = new FileOutputStream(decryptFilePath2);
+            FileOutputStream output = new FileOutputStream(outputFilePath);
+            FileOutputStream deOut = new FileOutputStream(decryptFilePath);
 
 
             System.out.println();
 
-            byte[] cl = encryption(plain_bytes, p, generator, pk);
-            String ec = new String(cl);
-            output.write(ec.getBytes());
+            //encryption file
+            byte[] encrypt_bytes = encryption(plain_bytes, p, generator, pk);
+            output.write(encrypt_bytes);
 
-            //decrypt
+            //decryption file
             byte[] decrypt_bytes = Files.readAllBytes(Paths.get(outputFilePath));
-            byte[] message_byte = decryption(decrypt_bytes, p, privatekey);
+            byte[] message_bytes = decryption(decrypt_bytes, p, privatekey);
             // for(byte m: message_byte){
             //     System.out.print(m);
             // }
             // System.out.println();
             // String msg = new String(message_byte);
             // System.out.println("msg = " + msg);
-            deOut.write(message_byte);
+            deOut.write(message_bytes);
             output.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -298,22 +300,22 @@ public class Elgamal {
             // if(A < 0){
             //     A = 127 + (A * (-1));
             // }
-            // System.out.print(a+" ");
+            System.out.println(a+" ");
             byte[] a_array =  a.toByteArray();
 
-            // System.out.print("a block : ");
+            System.out.print("a block : ");
             //padding 0 to fill block p
             for(int padding = p_byteArray.length - a_array.length; padding > 0; padding--){
-                // System.out.print(0 + ", ");
+                System.out.print(0 + ", ");
                 cipherList.add(0);
             }
             //fill a byte value
             for(int i = 0; i < a_array.length; i++){
-                // System.out.print(a_array[i] + ", ");
+                System.out.print(a_array[i] + ", ");
                 cipherList.add((int)a_array[i]);
             }
 
-            // System.out.println();
+            System.out.println();
             // tempList.add(Integer.valueOf(a.toString()));
             
             // change plain text byte value to positive (byte range -128 to 127)
@@ -325,24 +327,23 @@ public class Elgamal {
             
             x = x % Integer.valueOf(p.toString());
             BigInteger b = (y_pow_k.multiply(BigInteger.valueOf(x))).mod(p);
-            // System.out.print(b + " ");
+            System.out.println(b + " ");
             byte[] b_array = b.toByteArray();
   
-            // System.out.print("b block : ");
+            System.out.print("b block : ");
 
             //padding 0 to fill block p
             for(int padding = p_byteArray.length - b_array.length; padding > 0; padding--){
-                // System.out.print(0 + ", ");
+                System.out.print(0 + ", ");
                 cipherList.add(0);
             }
             //fill b byte value
             for(int i = 0; i < b_array.length; i++){
-                // System.out.print(b_array[i] + ", ");
+                System.out.print(b_array[i] + ", ");
                 cipherList.add((int)b_array[i]);
             }
-            // System.out.println();
+            System.out.println();
 
-            // tempList.add(b);
         }
         System.out.println();
         System.out.println("plain " + plain_bytes.length);
@@ -358,10 +359,13 @@ public class Elgamal {
 
         System.out.println("\n-------------------------------------------------");
 
+        // byte[] cipher_byte = serialize(cipherList);
+        System.out.println("Cipher byte[]");
         byte[] cipher_byte = new byte[cipherList.size()];
         for(int i = 0; i < cipher_byte.length; i++){
             int temp = cipherList.get(i);
-            // System.out.print(temp + " ");
+            if(temp > 127 || temp <-128)System.out.println("encryption byte overflow !!");
+            System.out.print((byte)temp + " ");
             cipher_byte[i] = (byte)temp;
             // System.out.println("cipher_byte[i] " + cipher_byte[i]);
         }
@@ -379,6 +383,12 @@ public class Elgamal {
         // byte[] arrayA = new byte[1];
         // byte[] arrayB = new byte[cipher_bytes.length - 1];
         System.out.println("decrypt");
+        // ArrayList<Integer> cipherList = (ArrayList<Integer>)deserialize(cipher_bytes);
+        System.out.println("cipher_bytes");
+        for(byte cb: cipher_bytes){
+            System.out.print(cb + " ");
+        }
+        System.out.println();
         List<Integer> plainList = new ArrayList<>();
         byte[] p_byteArray = p.toByteArray();
         System.out.println("p length = "+p_byteArray.length);
@@ -400,25 +410,25 @@ public class Elgamal {
             for(int j = 0; j < p_byteArray.length; j++){
                 a_array[j] = cipher_bytes[i + j];
             }
-            // System.out.print("decryp a : ");
-            // System.out.print("A array : ");
-            // for(byte b: a_array){
-            //     System.out.print(b+" ");
-            // }
-            // System.out.println();
+            System.out.print("A array : ");
+            for(byte b: a_array){
+                System.out.print(b+" ");
+            }
+            System.out.println();
             BigInteger a = new BigInteger(a_array);
+            System.out.println(a + " ");
             
             byte[] b_array = new byte[p_byteArray.length];
             for(int j = 0; j < p_byteArray.length; j++){
                 b_array[j] = cipher_bytes[(i + p_byteArray.length) + j];
             }
-            // System.out.print("decryp b : ");
-            // for(byte b: b_array){
-            //     System.out.println(b+" ");
-            // }
+            System.out.print("B array : ");
+            for(byte b: b_array){
+                System.out.print(b+" ");
+            }
+            System.out.println();
             BigInteger b = new BigInteger(b_array);
-            // System.out.print(a + " ");
-            // System.out.print(b + " ");
+            System.out.println(b + " ");
 
             // System.out.println();
             // x = b / a;
@@ -426,18 +436,18 @@ public class Elgamal {
             a = a.modInverse(p);
             // System.out.println("a^-1 = "+a);
             BigInteger x = (b.multiply(a)).mod(p);
-
             int xTemp = Integer.valueOf(x.toString());
-            // System.out.print(x + " ");
+            System.out.print("x = "+x + " ");
             if(xTemp > 127){
                 xTemp = -(xTemp - 127);
             }
+            System.out.print("xTemp = "+xTemp + " ");
             
-            // System.out.println();
+            System.out.println();
             // System.out.println("m = "+message);
             // System.out.println("=======================================");
             // System.out.println("x " +Integer.valueOf(x.toString()));
-            plainList.add(Integer.valueOf(x.toString()));
+            plainList.add(xTemp);
             
             // change plain text range back (byte -128 to 127)
         }
