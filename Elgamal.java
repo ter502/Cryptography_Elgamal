@@ -15,14 +15,17 @@ public class Elgamal {
         //input file path
         String inputFilePath = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\test.txt";
         String inputFilePath2 = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\mona_lisa_lowquality.jpg";
+        String inputFilePath3 = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\Lecture_08_RSAandElgamal.pdf";
         
         //output file path
-        String encryptFilePath = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\test_encryp.txt";
-        String encryptFilePath2 = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\picture_encryp.jpg";
+        String encryptFilePath = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\test_encrypt.txt";
+        String encryptFilePath2 = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\mona_lisa_lowquality_encrypt.jpg";
+        String encryptFilePath3 = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\Lecture_08_RSAandElgamal_encrypt.pdf";
 
         //decrypt path
         String decryptFilePath = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\test_decrypt.txt";
-        String decryptFilePath2 = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\picture_decrypt.jpg";
+        String decryptFilePath2 = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\mona_lisa_lowquality_decrypt.jpg";
+        String decryptFilePath3 = "D:\\Lab\\src\\YearFour\\Cryptography\\AsymmeticEncryption\\Lecture_08_RSAandElgamal_decrypt.pdf";
 
         Scanner sc = new Scanner(System.in);
 
@@ -56,18 +59,18 @@ public class Elgamal {
         
         try {
             //Convert Input File To Byte Array
-            byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath));
+            byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath3));
 
             //Set Output Path
-            FileOutputStream encrypFile = new FileOutputStream(encryptFilePath);
-            FileOutputStream decryptFile = new FileOutputStream(decryptFilePath);
+            FileOutputStream encrypFile = new FileOutputStream(encryptFilePath3);
+            FileOutputStream decryptFile = new FileOutputStream(decryptFilePath3);
 
             //Encryption File
             byte[] encrypt_bytes = encryption(plain_bytes, primeNum, generator, publicKey);
             encrypFile.write(encrypt_bytes);
             
             //Decryption File
-            byte[] cipher_bytes = Files.readAllBytes(Paths.get(encryptFilePath));
+            byte[] cipher_bytes = Files.readAllBytes(Paths.get(encryptFilePath3));
             byte[] message_bytes = decryption(cipher_bytes, primeNum, privateKey);
             decryptFile.write(message_bytes);
 
@@ -343,7 +346,7 @@ public class Elgamal {
             cipher_byte[i] = (byte)temp;
         }
 
-        System.out.println("<<< Encryption Finish >>>");
+        System.out.println("<<< Encryption Finish >>>\n");
         return cipher_byte;
     }
 
@@ -411,12 +414,11 @@ public class Elgamal {
         // Add Plain Text Byte For Write It To File
         byte[] plain_bytes = new byte[plainList.size()];
 
-        for(int i = 0; i<plain_bytes.length; i++){
+        for(int i = 0; i < plain_bytes.length; i++){
             plain_bytes[i] = plainList.get(i).byteValue();
-            System.out.print(plain_bytes[i] + " ");
         }
 
-        System.out.println("<<< Decryption Finish >>>");
+        System.out.println("<<< Decryption Finish >>>\n");
         return plain_bytes;
     }
 }
