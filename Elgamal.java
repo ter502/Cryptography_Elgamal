@@ -1,18 +1,18 @@
-package AsymmeticEncryption;
-
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.BufferedReader;
+import java.io.FileReader;
 
 public class Elgamal {
     public static void main(String[] args) {
@@ -29,7 +29,7 @@ public class Elgamal {
         //decrypt path
         String decryptFilePath = "./AsymmeticEncryption/Decrypt/test_decrypt.txt";
         String decryptFilePath2 = "./AsymmeticEncryption/Decrypt/mona_lisa_lowquality_decrypt.jpg";
-        String decryptFilePath3 = "./AsymmeticEncryption/Decrypt/Lecture_08_RSAandElgamal_decrypt.pdf";
+        String decryptFilePath3 = "./AsymmeticEncryption/Decrypt/Lecture_08_RSAandElgamal_decrypt.jpg";
 
         Scanner sc = new Scanner(System.in);
 
@@ -60,31 +60,48 @@ public class Elgamal {
         System.out.println("PublicKey = " + publicKey);
 
         System.out.println("======================================");
+
+        String PKFile="./AsymmeticEncryption/KeyManagement/PublicKey.txt";
+        createPublicFile(PKFile, primeNum, generator, publicKey);
+        //public key(p,g,y)=(p,generator,pk)
+        //private key(u)=privatekey
         
         try {
-            //Convert Input File To Byte Array
+            //Convert file to byte array
             byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath));
 
             //Set Output Path
             FileOutputStream encrypFile = new FileOutputStream(encryptFilePath);
             FileOutputStream decryptFile = new FileOutputStream(decryptFilePath);
-
-            //Encryption File
-            byte[] encrypt_bytes = encryption(plain_bytes, primeNum, generator, publicKey);
-            encrypFile.write(encrypt_bytes);
             
+             //Encryption File
+             byte[] encrypt_bytes = encryption(plain_bytes, primeNum, generator, publicKey);
+             encrypFile.write(encrypt_bytes);
+
             //Decryption File
             byte[] cipher_bytes = Files.readAllBytes(Paths.get(encryptFilePath));
             byte[] message_bytes = decryption(cipher_bytes, primeNum, privateKey);
             decryptFile.write(message_bytes);
 
+            System.out.println("=====================sign===========================");
+            BigInteger signed[]=signHash(primeNum, generator, privateKey, plain_bytes);
+            BigInteger r= signed[0];
+            BigInteger s= signed[1];
+            String signedFile="./AsymmeticEncryption/KeyManagement/Signature(r,s,X).txt";
+            BigInteger plain = new BigInteger(plain_bytes);
+            createSigHashFile(signedFile, r, s, plain);
+            System.out.println("=====================verify===========================");
+            BigInteger setData[][]=readFile(signedFile);
+            
+            Boolean verf=verify(generator, publicKey, setData[2][0], setData[0][0], setData[1][0], primeNum);
+            System.out.println(verf);
+
             encrypFile.close();
-            decryptFile.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
+   
     public static BigInteger pow(BigInteger base, int n){
         BigInteger result = BigInteger.ONE;
 
@@ -426,7 +443,7 @@ public class Elgamal {
         System.out.println("<<< Decryption Finish >>>\n");
         return plain_bytes;
     }
-    
+
     public static BigInteger[][] readFile(String path){
         // BigInteger setData[][]=new BigInteger[3][plainBytes.length];
         BigInteger setData[][]=null;
@@ -500,58 +517,60 @@ public class Elgamal {
         }
     }
 
-    public static void createSigFile(String path, BigInteger[] r, BigInteger[] s, byte[] plainBytes){
+    public static void createSigHashFile(String path, BigInteger r, BigInteger s, BigInteger plainBytes){
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
             //write r on the first line
-            for (int i = 0; i < r.length; i++) {
-                writer.write(r[i].toString()+" ");
-            }
+            
+            writer.write(r.toString());
+            
             writer.newLine(); // Move to the next line
             //write s on the next line
-            for (int i = 0; i < s.length; i++) {
-                writer.write(s[i].toString()+" ");
-            }
+            
+            writer.write(s.toString());
+            
             writer.newLine();// Move to the next line
-            for (int i = 0; i < plainBytes.length; i++) {
-                writer.write(plainBytes[i]+" ");
-            }
+            writer.write(plainBytes.toString());
+            
 
             System.out.println("Text file created successfully!");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+    
+    // Hash a byte array using SHA-256
+    private static BigInteger hash(byte[] input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(input);
+            return new BigInteger(1, hashBytes);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     // x=secret key(sk)
     // y=public key(pk)
     // X=plaintext
-    
-    public static BigInteger[][] sign(BigInteger p,BigInteger g, BigInteger sk, BigInteger end, byte[] plainBytes){
-        BigInteger[][] result = new BigInteger[2][plainBytes.length];
-        BigInteger[]R=new BigInteger[plainBytes.length];
-        BigInteger[]S=new BigInteger[plainBytes.length];
-        BigInteger[]K=new BigInteger[plainBytes.length];
-        BigInteger[]InvK=new BigInteger[plainBytes.length];
-        BigInteger[]X=new BigInteger[plainBytes.length];
-        BigInteger r,s;
-        for (int i = 0; i < plainBytes.length; i++) {
-            // Convert the byte value to a BigInteger
-            X[i] = new BigInteger(new byte[]{plainBytes[i]});
-            // System.out.println("TextX : "+X[i]);
-            K[i]=generateK(p);
-            // System.out.println("K value : "+K[i]);
-            InvK[i]=K[i].modInverse(p.subtract(BigInteger.ONE));
-            // System.out.println("inverse K : "+InvK[i]);
-            r=modPow(g, K[i], p);
-            s=(InvK[i].multiply(X[i].subtract(sk.multiply(r)))).mod(p.subtract(BigInteger.ONE));
-            R[i]=r;
-            S[i]=s;
-        }
-        result[0]=R;
-        result[1]=S;
+    public static BigInteger[] signHash(BigInteger p,BigInteger g, BigInteger sk, byte[] plainBytes){
+        BigInteger[] result = new BigInteger[3];
+        BigInteger hash = hash(plainBytes).mod(p);
+        System.out.println("Hash: " + hash);
+        BigInteger K=generateK(p);
+        BigInteger ink=K.modInverse(p.subtract(BigInteger.ONE));
+        BigInteger r=modPow(g, K, p);
+        BigInteger s=(ink.multiply(hash.subtract(sk.multiply(r)))).mod(p.subtract(BigInteger.ONE));
+        result[0]=r;
+        result[1]=s;
+        result[2]=hash;
         return result;
     }
-    public static boolean verify(BigInteger g, BigInteger pk, BigInteger X, BigInteger r, BigInteger s, BigInteger p){
+
+    public static boolean verify(BigInteger g, BigInteger pk, BigInteger plain, BigInteger r, BigInteger s, BigInteger p){
+        // Convert BigInteger to byte array
+        byte[] byteArray = plain.toByteArray();
+        BigInteger X = hash(byteArray).mod(p);
         System.out.print("X : "+X+" ");
         BigInteger GpowX=modPow(g, X, p);
         System.out.print("GpowX = "+GpowX+" ");
@@ -559,6 +578,10 @@ public class Elgamal {
         BigInteger rs=modPow(r, s, p);
         BigInteger total=yr.multiply(rs).mod(p);
         System.out.print("Total = "+total+"  ");
+        System.out.print("G = "+g+" ");
+        System.out.print("Y = "+pk+"  ");
+        System.out.print("R = "+r+"  ");
+        System.out.print("S = "+s+"  ");
         if(GpowX.equals(total)==true){
             System.out.print(" success ");
             System.out.println();
@@ -568,5 +591,6 @@ public class Elgamal {
             System.out.println();
             return false;
         }
+        
     }
 }
