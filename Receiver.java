@@ -1,10 +1,6 @@
 package AsymmeticEncryption;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -13,28 +9,23 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.BufferedReader;
+import java.io.FileReader;
 
-public class Elgamal {
+public class Receiver {
     public static void main(String[] args) {
-        //input file path
-        String inputFilePath = "./AsymmeticEncryption/test.txt";
-        String inputFilePath2 = "./AsymmeticEncryption/mona_lisa_lowquality.jpg";
-        String inputFilePath3 = "./AsymmeticEncryption/Lecture_08_RSAandElgamal.pdf";
-        
-        //output file path
-        String encryptFilePath = "./AsymmeticEncryption/Encrypt/test_encrypt.txt";
-        String encryptFilePath2 = "./AsymmeticEncryption/Encrypt/mona_lisa_lowquality_encrypt.jpg";
-        String encryptFilePath3 = "./AsymmeticEncryption/Encrypt/Lecture_08_RSAandElgamal_encrypt.pdf";
-
         //decrypt path
         String decryptFilePath = "./AsymmeticEncryption/Decrypt/test_decrypt.txt";
-        String decryptFilePath2 = "./AsymmeticEncryption/Decrypt/mona_lisa_lowquality_decrypt.jpg";
-        String decryptFilePath3 = "./AsymmeticEncryption/Decrypt/Lecture_08_RSAandElgamal_decrypt.pdf";
+        String decryptFilePath2 = "./AsymmeticEncryption/Decrypt/picture_decrypt.jpg";
+        String decryptFilePath3 = "./AsymmeticEncryption/Decrypt/Lecture_08_RSAandElgamal_decrypt.jpg";
 
         Scanner sc = new Scanner(System.in);
 
         System.out.print("Enter n:");
-        int n = sc.nextInt();
+        String N = sc.nextLine();
+        int n = Integer.valueOf(N);
         
         System.out.println("======================================");
 
@@ -50,7 +41,7 @@ public class Elgamal {
         //Create Generator
         BigInteger generator = generateG(primeNum);
         System.out.println("Generator = " + generator);
-
+        
         //Generate Private Key
         BigInteger privateKey = genPrivateKey(primeNum);
         System.out.println("PrivateKey = " + privateKey);
@@ -58,28 +49,37 @@ public class Elgamal {
         //Generate Public Key
         BigInteger publicKey = genPublicKey(primeNum, generator, privateKey);
         System.out.println("PublicKey = " + publicKey);
-
         System.out.println("======================================");
-        
+
+        //Create Public Key File
+        String PKFile="./AsymmeticEncryption/KeyManagement/PublicKey.txt";
+        createPublicFile(PKFile, primeNum, generator, publicKey);
+
+        System.out.print("Encrypt File Path: ");
+        String encryptFilePath = sc.nextLine();
+
         try {
-            //Convert Input File To Byte Array
-            byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath));
-
-            //Set Output Path
-            FileOutputStream encrypFile = new FileOutputStream(encryptFilePath);
             FileOutputStream decryptFile = new FileOutputStream(decryptFilePath);
-
-            //Encryption File
-            byte[] encrypt_bytes = encryption(plain_bytes, primeNum, generator, publicKey);
-            encrypFile.write(encrypt_bytes);
             
             //Decryption File
             byte[] cipher_bytes = Files.readAllBytes(Paths.get(encryptFilePath));
             byte[] message_bytes = decryption(cipher_bytes, primeNum, privateKey);
             decryptFile.write(message_bytes);
-
-            encrypFile.close();
             decryptFile.close();
+            
+            /*
+            System.out.println("=====================verify===========================");
+            String signedFile="./AsymmeticEncryption/KeyManagement/Signature(r,s,X).txt";
+            BigInteger setData[][]=readFile(signedFile);
+            Boolean verf;
+            for (int i = 0; i < setData[0].length; i++) {
+                verf= verify(generator, publicKey, setData[2][i], setData[0][i], setData[1][i], primeNum);
+                System.out.println("Verify " + verf);
+                if(verf==false){
+                    break;
+                }
+            }
+            */
         } catch (IOException e) {
             e.printStackTrace();
         }

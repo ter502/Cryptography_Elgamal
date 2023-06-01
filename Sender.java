@@ -1,10 +1,6 @@
 package AsymmeticEncryption;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -12,9 +8,12 @@ import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.BufferedReader;
+import java.io.FileReader;
 
-public class Elgamal {
+public class Sender {
     public static void main(String[] args) {
         //input file path
         String inputFilePath = "./AsymmeticEncryption/test.txt";
@@ -23,63 +22,64 @@ public class Elgamal {
         
         //output file path
         String encryptFilePath = "./AsymmeticEncryption/Encrypt/test_encrypt.txt";
-        String encryptFilePath2 = "./AsymmeticEncryption/Encrypt/mona_lisa_lowquality_encrypt.jpg";
+        String encryptFilePath2 = "./AsymmeticEncryption/Encrypt/picture_encrypt.jpg";
         String encryptFilePath3 = "./AsymmeticEncryption/Encrypt/Lecture_08_RSAandElgamal_encrypt.pdf";
 
-        //decrypt path
-        String decryptFilePath = "./AsymmeticEncryption/Decrypt/test_decrypt.txt";
-        String decryptFilePath2 = "./AsymmeticEncryption/Decrypt/mona_lisa_lowquality_decrypt.jpg";
-        String decryptFilePath3 = "./AsymmeticEncryption/Decrypt/Lecture_08_RSAandElgamal_decrypt.pdf";
+        //Read Key File
+        String PKFile="./AsymmeticEncryption/KeyManagement/PublicKey.txt";
+        BigInteger key[][]=readFile(PKFile);
 
-        Scanner sc = new Scanner(System.in);
+        //Read Prime Number
+        BigInteger primeNum = key[0][0];
+        System.out.println("PrimeNum " + primeNum);
 
-        System.out.print("Enter n:");
-        int n = sc.nextInt();
+        //Read Generator
+        BigInteger generator = key[1][0];
+        System.out.println("Generator " + generator);
+
+        //Read Public Key
+        BigInteger publicKey = key[2][0];
+        System.out.println("PublicKey " + publicKey);
+
+
+        System.out.println("======================================");
+
         
-        System.out.println("======================================");
-
-        //Calculate Number Range
-        BigInteger start = nStart(n);
-        BigInteger end = nEnd(n);
-        System.out.println("Range = " + start + "~" + end);
-
-        //Generate Prime Number
-        BigInteger primeNum = generateP(start, end);
-        System.out.println("PrimeNum = " + primeNum);
-
-        //Create Generator
-        BigInteger generator = generateG(primeNum);
-        System.out.println("Generator = " + generator);
-
-        //Generate Private Key
-        BigInteger privateKey = genPrivateKey(primeNum);
-        System.out.println("PrivateKey = " + privateKey);
-
-        //Generate Public Key
-        BigInteger publicKey = genPublicKey(primeNum, generator, privateKey);
-        System.out.println("PublicKey = " + publicKey);
-
-        System.out.println("======================================");
+        //public key(p,g,y)=(p,generator,pk)
+        //private key(u)=privatekey
         
         try {
-            //Convert Input File To Byte Array
+            //Convert file to byte array
             byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath));
-
             //Set Output Path
             FileOutputStream encrypFile = new FileOutputStream(encryptFilePath);
-            FileOutputStream decryptFile = new FileOutputStream(decryptFilePath);
-
-            //Encryption File
+             //Encryption File
             byte[] encrypt_bytes = encryption(plain_bytes, primeNum, generator, publicKey);
             encrypFile.write(encrypt_bytes);
-            
-            //Decryption File
-            byte[] cipher_bytes = Files.readAllBytes(Paths.get(encryptFilePath));
-            byte[] message_bytes = decryption(cipher_bytes, primeNum, privateKey);
-            decryptFile.write(message_bytes);
-
             encrypFile.close();
-            decryptFile.close();
+
+            /* 
+            System.out.println("=====================sign===========================");
+
+            BigInteger signed[][]=sign(primeNum, generator, privateKey, end, plain_bytes);
+
+            BigInteger r[]= signed[0];
+            BigInteger s[]= signed[1];
+            System.out.println("Y  :  " + publicKey);
+            System.out.print("S = ");
+            for (int i = 0; i < s.length; i++) {
+                System.out.print(s[i]+" ");
+            }
+            System.out.println();
+            System.out.print("R = ");
+            for (int i = 0; i < r.length; i++) {
+                System.out.print(r[i]+" ");
+            }
+            System.out.println();
+            
+            String signedFile="./AsymmeticEncryption/KeyManagement/Signature(r,s,X).txt";
+            createSigFile(signedFile, r, s, plain_bytes);
+            */
         } catch (IOException e) {
             e.printStackTrace();
         }
