@@ -1,13 +1,14 @@
-package AsymmeticEncryption;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.BufferedReader;
@@ -22,29 +23,61 @@ public class Sender {
         
         //output file path
         String encryptFilePath = "./AsymmeticEncryption/Encrypt/test_encrypt.txt";
-        String encryptFilePath2 = "./AsymmeticEncryption/Encrypt/picture_encrypt.jpg";
+        String encryptFilePath2 = "./AsymmeticEncryption/Encrypt/mona_lisa_lowquality_encrypt.jpg";
         String encryptFilePath3 = "./AsymmeticEncryption/Encrypt/Lecture_08_RSAandElgamal_encrypt.pdf";
 
         //Read Key File
-        String PKFile="./AsymmeticEncryption/KeyManagement/PublicKey.txt";
-        BigInteger key[][]=readFile(PKFile);
+        String PKFileB="./AsymmeticEncryption/KeyManagement/PublicKeyB.txt";
+        BigInteger key[][]=readFile(PKFileB);
 
         //Read Prime Number
-        BigInteger primeNum = key[0][0];
-        System.out.println("PrimeNum " + primeNum);
+        BigInteger primeNumB = key[0][0];
+        System.out.println("PrimeNum " + primeNumB);
 
         //Read Generator
-        BigInteger generator = key[1][0];
-        System.out.println("Generator " + generator);
+        BigInteger generatorB = key[1][0];
+        System.out.println("Generator " + generatorB);
 
         //Read Public Key
-        BigInteger publicKey = key[2][0];
-        System.out.println("PublicKey " + publicKey);
+        BigInteger publicKeyB = key[2][0];
+        System.out.println("PublicKey " + publicKeyB);
 
 
         System.out.println("======================================");
 
+        Scanner sc = new Scanner(System.in);
+
+        System.out.print("Enter n:");
+        String N = sc.nextLine();
+        int n = Integer.valueOf(N);
         
+        System.out.println("======================================");
+
+        //Calculate Number Range
+        BigInteger start = nStart(n);
+        BigInteger end = nEnd(n);
+        System.out.println("Range = " + start + "~" + end);
+
+        //Generate Prime Number
+        BigInteger primeNumA = generateP(start, end);
+        System.out.println("PrimeNum = " + primeNumA);
+
+        //Create Generator
+        BigInteger generatorA = generateG(primeNumA);
+        System.out.println("Generator = " + generatorA);
+        
+        //Generate Private Key
+        BigInteger privateKeyA = genPrivateKey(primeNumA);
+        System.out.println("PrivateKey = " + privateKeyA);
+
+        //Generate Public Key
+        BigInteger publicKeyA = genPublicKey(primeNumA, generatorA, privateKeyA);
+        System.out.println("PublicKey = " + publicKeyA);
+        System.out.println("======================================");
+
+        //Create Public Key File
+        String PKFileA="./AsymmeticEncryption/KeyManagement/PublicKeyA.txt";
+        createPublicFile(PKFileA, primeNumA, generatorA, publicKeyA);
         //public key(p,g,y)=(p,generator,pk)
         //private key(u)=privatekey
         
@@ -54,32 +87,22 @@ public class Sender {
             //Set Output Path
             FileOutputStream encrypFile = new FileOutputStream(encryptFilePath);
              //Encryption File
-            byte[] encrypt_bytes = encryption(plain_bytes, primeNum, generator, publicKey);
+            byte[] encrypt_bytes = encryption(plain_bytes, primeNumB, generatorB, publicKeyB);
             encrypFile.write(encrypt_bytes);
             encrypFile.close();
 
-            /* 
+            
             System.out.println("=====================sign===========================");
 
-            BigInteger signed[][]=sign(primeNum, generator, privateKey, end, plain_bytes);
-
-            BigInteger r[]= signed[0];
-            BigInteger s[]= signed[1];
-            System.out.println("Y  :  " + publicKey);
-            System.out.print("S = ");
-            for (int i = 0; i < s.length; i++) {
-                System.out.print(s[i]+" ");
-            }
-            System.out.println();
-            System.out.print("R = ");
-            for (int i = 0; i < r.length; i++) {
-                System.out.print(r[i]+" ");
-            }
-            System.out.println();
-            
+            BigInteger signed[]=signHash(primeNumA, generatorA, privateKeyA, plain_bytes);
+            BigInteger r= signed[0];
+            BigInteger s= signed[1];
+            System.out.println("R : "+r);
+            System.out.println("S : "+s);
             String signedFile="./AsymmeticEncryption/KeyManagement/Signature(r,s,X).txt";
-            createSigFile(signedFile, r, s, plain_bytes);
-            */
+            BigInteger plain = new BigInteger(plain_bytes);
+            createSigHashFile(signedFile, r, s, plain);
+            
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -500,56 +523,55 @@ public class Sender {
         }
     }
 
-    public static void createSigFile(String path, BigInteger[] r, BigInteger[] s, byte[] plainBytes){
+    public static void createSigHashFile(String path, BigInteger r, BigInteger s, BigInteger plainBytes){
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
             //write r on the first line
-            for (int i = 0; i < r.length; i++) {
-                writer.write(r[i].toString()+" ");
-            }
+            
+            writer.write(r.toString());
+            
             writer.newLine(); // Move to the next line
             //write s on the next line
-            for (int i = 0; i < s.length; i++) {
-                writer.write(s[i].toString()+" ");
-            }
+            
+            writer.write(s.toString());
+            
             writer.newLine();// Move to the next line
-            for (int i = 0; i < plainBytes.length; i++) {
-                writer.write(plainBytes[i]+" ");
-            }
+            writer.write(plainBytes.toString());
+            
 
             System.out.println("Text file created successfully!");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+    
+    // Hash a byte array using SHA-256
+    private static BigInteger hash(byte[] input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(input);
+            return new BigInteger(1, hashBytes);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     // x=secret key(sk)
     // y=public key(pk)
     // X=plaintext
-    
-    public static BigInteger[][] sign(BigInteger p,BigInteger g, BigInteger sk, BigInteger end, byte[] plainBytes){
-        BigInteger[][] result = new BigInteger[2][plainBytes.length];
-        BigInteger[]R=new BigInteger[plainBytes.length];
-        BigInteger[]S=new BigInteger[plainBytes.length];
-        BigInteger[]K=new BigInteger[plainBytes.length];
-        BigInteger[]InvK=new BigInteger[plainBytes.length];
-        BigInteger[]X=new BigInteger[plainBytes.length];
-        BigInteger r,s;
-        for (int i = 0; i < plainBytes.length; i++) {
-            // Convert the byte value to a BigInteger
-            X[i] = new BigInteger(new byte[]{plainBytes[i]});
-            // System.out.println("TextX : "+X[i]);
-            K[i]=generateK(p);
-            // System.out.println("K value : "+K[i]);
-            InvK[i]=K[i].modInverse(p.subtract(BigInteger.ONE));
-            // System.out.println("inverse K : "+InvK[i]);
-            r=modPow(g, K[i], p);
-            s=(InvK[i].multiply(X[i].subtract(sk.multiply(r)))).mod(p.subtract(BigInteger.ONE));
-            R[i]=r;
-            S[i]=s;
-        }
-        result[0]=R;
-        result[1]=S;
+    public static BigInteger[] signHash(BigInteger p,BigInteger g, BigInteger sk, byte[] plainBytes){
+        BigInteger[] result = new BigInteger[3];
+        BigInteger hash = hash(plainBytes).mod(p);
+        System.out.println("Hash: " + hash);
+        BigInteger K=generateK(p);
+        BigInteger ink=K.modInverse(p.subtract(BigInteger.ONE));
+        BigInteger r=modPow(g, K, p);
+        BigInteger s=(ink.multiply(hash.subtract(sk.multiply(r)))).mod(p.subtract(BigInteger.ONE));
+        result[0]=r;
+        result[1]=s;
+        result[2]=hash;
         return result;
+
     }
     public static boolean verify(BigInteger g, BigInteger pk, BigInteger X, BigInteger r, BigInteger s, BigInteger p){
         System.out.print("X : "+X+" ");

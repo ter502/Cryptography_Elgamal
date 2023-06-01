@@ -1,10 +1,10 @@
-package AsymmeticEncryption;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +18,7 @@ public class Receiver {
     public static void main(String[] args) {
         //decrypt path
         String decryptFilePath = "./AsymmeticEncryption/Decrypt/test_decrypt.txt";
-        String decryptFilePath2 = "./AsymmeticEncryption/Decrypt/picture_decrypt.jpg";
+        String decryptFilePath2 = "./AsymmeticEncryption/Decrypt/mona_lisa_lowquality_decrypt.jpg";
         String decryptFilePath3 = "./AsymmeticEncryption/Decrypt/Lecture_08_RSAandElgamal_decrypt.jpg";
 
         Scanner sc = new Scanner(System.in);
@@ -35,25 +35,25 @@ public class Receiver {
         System.out.println("Range = " + start + "~" + end);
 
         //Generate Prime Number
-        BigInteger primeNum = generateP(start, end);
-        System.out.println("PrimeNum = " + primeNum);
+        BigInteger primeNumB = generateP(start, end);
+        System.out.println("PrimeNum = " + primeNumB);
 
         //Create Generator
-        BigInteger generator = generateG(primeNum);
-        System.out.println("Generator = " + generator);
+        BigInteger generatorB = generateG(primeNumB);
+        System.out.println("Generator = " + generatorB);
         
         //Generate Private Key
-        BigInteger privateKey = genPrivateKey(primeNum);
-        System.out.println("PrivateKey = " + privateKey);
+        BigInteger privateKeyB = genPrivateKey(primeNumB);
+        System.out.println("PrivateKey = " + privateKeyB);
 
         //Generate Public Key
-        BigInteger publicKey = genPublicKey(primeNum, generator, privateKey);
-        System.out.println("PublicKey = " + publicKey);
+        BigInteger publicKeyB = genPublicKey(primeNumB, generatorB, privateKeyB);
+        System.out.println("PublicKey = " + publicKeyB);
         System.out.println("======================================");
 
         //Create Public Key File
-        String PKFile="./AsymmeticEncryption/KeyManagement/PublicKey.txt";
-        createPublicFile(PKFile, primeNum, generator, publicKey);
+        String PKFileB="./AsymmeticEncryption/KeyManagement/PublicKeyB.txt";
+        createPublicFile(PKFileB, primeNumB, generatorB, publicKeyB);
 
         System.out.print("Encrypt File Path: ");
         String encryptFilePath = sc.nextLine();
@@ -63,23 +63,34 @@ public class Receiver {
             
             //Decryption File
             byte[] cipher_bytes = Files.readAllBytes(Paths.get(encryptFilePath));
-            byte[] message_bytes = decryption(cipher_bytes, primeNum, privateKey);
+            byte[] message_bytes = decryption(cipher_bytes, primeNumB, privateKeyB);
             decryptFile.write(message_bytes);
             decryptFile.close();
             
-            /*
+            
             System.out.println("=====================verify===========================");
+            String PKFileA="./AsymmeticEncryption/KeyManagement/PublicKeyA.txt";
+            BigInteger key[][]=readFile(PKFileA);
+
+            //Read Prime Number
+            BigInteger primeNumA = key[0][0];
+            System.out.println("PrimeNum " + primeNumA);
+    
+            //Read Generator
+            BigInteger generatorA = key[1][0];
+            System.out.println("Generator " + generatorA);
+    
+            //Read Public Key
+            BigInteger publicKeyA = key[2][0];
+            System.out.println("PublicKey " + publicKeyA);
+    
+    
+            System.out.println("======================================");
             String signedFile="./AsymmeticEncryption/KeyManagement/Signature(r,s,X).txt";
             BigInteger setData[][]=readFile(signedFile);
-            Boolean verf;
-            for (int i = 0; i < setData[0].length; i++) {
-                verf= verify(generator, publicKey, setData[2][i], setData[0][i], setData[1][i], primeNum);
-                System.out.println("Verify " + verf);
-                if(verf==false){
-                    break;
-                }
-            }
-            */
+            Boolean verf=verify(generatorA, publicKeyA, setData[2][0], setData[0][0], setData[1][0], primeNumA);
+            System.out.println(verf);
+            
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -522,6 +533,18 @@ public class Receiver {
         }
     }
 
+     // Hash a byte array using SHA-256
+     private static BigInteger hash(byte[] input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(input);
+            return new BigInteger(1, hashBytes);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     // x=secret key(sk)
     // y=public key(pk)
     // X=plaintext
@@ -551,7 +574,10 @@ public class Receiver {
         result[1]=S;
         return result;
     }
-    public static boolean verify(BigInteger g, BigInteger pk, BigInteger X, BigInteger r, BigInteger s, BigInteger p){
+    public static boolean verify(BigInteger g, BigInteger pk, BigInteger plain, BigInteger r, BigInteger s, BigInteger p){
+        // Convert BigInteger to byte array
+        byte[] byteArray = plain.toByteArray();
+        BigInteger X = hash(byteArray).mod(p);
         System.out.print("X : "+X+" ");
         BigInteger GpowX=modPow(g, X, p);
         System.out.print("GpowX = "+GpowX+" ");
@@ -559,6 +585,10 @@ public class Receiver {
         BigInteger rs=modPow(r, s, p);
         BigInteger total=yr.multiply(rs).mod(p);
         System.out.print("Total = "+total+"  ");
+        System.out.print("G = "+g+" ");
+        System.out.print("Y = "+pk+"  ");
+        System.out.print("R = "+r+"  ");
+        System.out.print("S = "+s+"  ");
         if(GpowX.equals(total)==true){
             System.out.print(" success ");
             System.out.println();
@@ -568,5 +598,6 @@ public class Receiver {
             System.out.println();
             return false;
         }
+        
     }
 }
