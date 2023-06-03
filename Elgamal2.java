@@ -160,13 +160,18 @@ public class Elgamal2 {
                 String inputFilePath = sc.nextLine();
 
                 System.out.println("Create Digital Signature ...");
+                System.out.println("===================================================================");
                 try {
                     byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath));
                     BigInteger signed[] = signHash(primeNum, generator, privateKey, plain_bytes);
                     BigInteger r = signed[0];
                     BigInteger s = signed[1];
+                    BigInteger hash = signed[2];
                     System.out.println("R : "+r);
                     System.out.println("S : "+s);
+                    System.out.println("===================================================================");
+                    String hashFile = "./AsymmeticEncryption/KeyManagement/hash.txt";
+                    createHashFile(hashFile, hash);
                     String signedFile = "./AsymmeticEncryption/KeyManagement/Signature.txt";
                     BigInteger plain = new BigInteger(plain_bytes);
                     createSigHashFile(signedFile, r, s, plain);
@@ -404,6 +409,16 @@ public class Elgamal2 {
             //write r on the first line
             writer.write(privateKeyA.toString());
             System.out.println("PrivateKey file created successfully!");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void createHashFile(String path, BigInteger hash) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
+            //write r on the first line
+            writer.write(hash.toString());
+            System.out.println("Hash file created successfully!");
         } catch (IOException e) {
             e.printStackTrace();
         }
