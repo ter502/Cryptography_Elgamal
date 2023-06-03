@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -121,7 +123,7 @@ public class Elgamal2 {
                 String privateFilePath = sc.nextLine();
                 BigInteger privateKey = readFile(privateFilePath)[0][0];
                 
-                System.out.println("    Decryption Process ...");
+                System.out.println("Decryption Process ...");
                 try {
                     FileOutputStream decryptFile = new FileOutputStream(decryptFilePath);
                     byte[] cipher_bytes = Files.readAllBytes(Paths.get(encrypFilePath));
@@ -133,16 +135,49 @@ public class Elgamal2 {
                     e.printStackTrace();
                 }
                 System.out.println("<<< Decryption Finish >>>");
-                
             }
 
             if(c.equalsIgnoreCase("signature")){
-                System.out.println("    Create Digital Signature ...");
+                //Read Public Key File
+                System.out.print("Public Key File Path: ");
+                String plainFilePath = sc.nextLine();
+
+                //Read Prime Number
+                BigInteger primeNum = readFile(plainFilePath)[0][0];
+                // System.out.println("Prime = " + primeNum);
+
+                //Read Generator
+                BigInteger generator = readFile(plainFilePath)[1][0];
+                // System.out.println("Generator = " + generator);
+
+                //Read Private Key File
+                System.out.print("Private Key File Path: ");
+                String privateFilePath = sc.nextLine();
+                BigInteger privateKey = readFile(privateFilePath)[0][0];
+
+                //Get Plain Text File
+                System.out.print("Plain Text File Path: ");
+                String inputFilePath = sc.nextLine();
+
+                System.out.println("Create Digital Signature ...");
+                try {
+                    byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath));
+                    BigInteger signed[] = signHash(primeNum, generator, privateKey, plain_bytes);
+                    BigInteger r = signed[0];
+                    BigInteger s = signed[1];
+                    System.out.println("R : "+r);
+                    System.out.println("S : "+s);
+                    String signedFile = "./AsymmeticEncryption/KeyManagement/Signature.txt";
+                    BigInteger plain = new BigInteger(plain_bytes);
+                    createSigHashFile(signedFile, r, s, plain);
+                }catch(IOException e){
+                    e.printStackTrace();
+                }
                 System.out.println("<<< Digital Signature Create Finish >>>");
             }
 
             if(c.equalsIgnoreCase("verify")){
-                System.out.println("    Verifying ...");
+                System.out.println("Verifying ...");
                 System.out.println("<<< Verify Finish >>>");
             }
             
@@ -233,24 +268,7 @@ public class Elgamal2 {
             return BigInteger.ZERO;
         }
     }
-/* 
-    public static boolean isPrimeNumber(BigInteger num){
-        boolean isPrime = true;
 
-        // If Number Is Event Return Not Prime Number
-        if((num.mod(BigInteger.TWO)).compareTo(BigInteger.ZERO) == 0){
-            isPrime = false;
-            return isPrime;
-        }
-
-        for (BigInteger i = BigInteger.TWO; i.compareTo(num.sqrt()) <= 0; i = i.add(BigInteger.ONE)) {
-          if (num.mod(i).equals(BigInteger.ZERO)) {
-            isPrime = false;
-            break;
-          }
-        }
-        return isPrime;
-    }*/
     public static boolean isPrimeNumber(BigInteger num, int round){
         boolean isPrime = true;
         BigInteger a;
@@ -605,5 +623,78 @@ public class Elgamal2 {
         }
 
         return plain_bytes;
+    }
+
+    public static void createSigHashFile(String path, BigInteger r, BigInteger s, BigInteger plainBytes){
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
+            //write r on the first line
+            
+            writer.write(r.toString());
+            
+            writer.newLine(); // Move to the next line
+            //write s on the next line
+            
+            writer.write(s.toString());
+            
+            writer.newLine();// Move to the next line
+            writer.write(plainBytes.toString());
+            
+
+            System.out.println("Signature file created successfully!");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Hash a byte array using SHA-256
+    private static BigInteger hash(byte[] input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(input);
+            return new BigInteger(1, hashBytes);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    public static BigInteger[] signHash(BigInteger p,BigInteger g, BigInteger sk, byte[] plainBytes){
+        BigInteger[] result = new BigInteger[3];
+        BigInteger hash = hash(plainBytes).mod(p);
+        System.out.println("Hash: " + hash);
+        BigInteger K = generateK(p);
+        BigInteger ink = K.modInverse(p.subtract(BigInteger.ONE));
+        BigInteger r = fastExpo(g, K, p);
+        BigInteger s = (ink.multiply(hash.subtract(sk.multiply(r)))).mod(p.subtract(BigInteger.ONE));
+        result[0] = r;
+        result[1] = s;
+        result[2] = hash;
+        return result;
+    }
+
+    public static boolean verify(BigInteger g, BigInteger pk, BigInteger plain, BigInteger r, BigInteger s, BigInteger p){
+        // Convert BigInteger to byte array
+        byte[] byteArray = plain.toByteArray();
+        BigInteger X = hash(byteArray).mod(p);
+        System.out.print("X : " + X + " ");
+        BigInteger GpowX = fastExpo(g, X, p);
+        System.out.print("GpowX = " + GpowX + " ");
+        BigInteger yr = fastExpo(pk, r, p);
+        BigInteger rs = fastExpo(r, s, p);
+        BigInteger total = yr.multiply(rs).mod(p);
+        System.out.print("Total = " + total + "  ");
+        System.out.print("G = " + g + " ");
+        System.out.print("Y = " + pk + "  ");
+        System.out.print("R = " + r + "  ");
+        System.out.print("S = " + s + "  ");
+        if(GpowX.equals(total) == true){
+            System.out.print(" success ");
+            System.out.println();
+            return true;
+        }else{
+            System.out.print(" verify failed");
+            System.out.println();
+            return false;
+        }
     }
 }
