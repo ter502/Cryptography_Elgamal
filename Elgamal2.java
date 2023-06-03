@@ -46,25 +46,29 @@ public class Elgamal2 {
                 BigInteger publicKey = genPublicKey(primeNum, generator, privateKey);
                 System.out.println("PublicKey = " + publicKey);
 
-                System.out.println("===================================================================");
+                System.out.println("===================================================================================");
 
                 //Creat Private Key File
                 BigInteger tag = randomBigInt(BigInteger.valueOf(1000), BigInteger.valueOf(9999));
                 String SKFileA="./AsymmeticEncryption/KeyManagement/privateKey_" + tag + ".txt";
                 createPrivateFile(SKFileA, privateKey);
-
+                
                 //Creat Public Key File
                 String SKFileB="./AsymmeticEncryption/KeyManagement/publicKey_" + tag + ".txt";
                 createPublicFile(SKFileB, primeNum, generator, publicKey);
-
-                System.out.println("<<<==================== Key Generate Finish ====================>>>");
+                
+                System.out.println("<<< Key Generate Finish >>>");
             }
-
+            
             if(c.equalsIgnoreCase("encryption")){
                 //Read Public Key File
                 System.out.print("Public Key File Path: ");
                 String plainFilePath = sc.nextLine();
 
+                //Get Plain Text File
+                System.out.print("Plain Text File Path: ");
+                String inputFilePath = sc.nextLine();
+                
                 //Set Output File Path
                 System.out.print("Output File Path: ");
                 String encryptFilePath = sc.nextLine();
@@ -81,11 +85,7 @@ public class Elgamal2 {
                 BigInteger publicKey = readFile(plainFilePath)[2][0];
                 // System.out.println("PublicKey = " + publicKey);
 
-
-                //Get Plain Text File
-                System.out.print("Plain Text File Path: ");
-                String inputFilePath = sc.nextLine();
-
+                
                 System.out.println("Encryption Process ...");
                 try {
                     byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath));
@@ -160,7 +160,7 @@ public class Elgamal2 {
                 String inputFilePath = sc.nextLine();
 
                 System.out.println("Create Digital Signature ...");
-                System.out.println("===================================================================");
+                System.out.println("===================================================================================");
                 try {
                     byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath));
                     BigInteger signed[] = signHash(primeNum, generator, privateKey, plain_bytes);
@@ -169,7 +169,7 @@ public class Elgamal2 {
                     BigInteger hash = signed[2];
                     System.out.println("R : "+r);
                     System.out.println("S : "+s);
-                    System.out.println("===================================================================");
+                    System.out.println("===================================================================================");
                     String hashFile = "./AsymmeticEncryption/KeyManagement/hash.txt";
                     createHashFile(hashFile, hash);
                     String signedFile = "./AsymmeticEncryption/KeyManagement/Signature.txt";
