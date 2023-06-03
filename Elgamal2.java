@@ -87,11 +87,11 @@ public class Elgamal2 {
                 System.out.println("Encryption Process ...");
                 try {
                     byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath));
-                    byte[] cipher_byte = encryption(plain_bytes, primeNum, generator, publicKey);
+                    byte[] cipher_bytes = encryption(plain_bytes, primeNum, generator, publicKey);
                     FileOutputStream encrypFile = new FileOutputStream(encryptFilePath);
                     
                     //Create File Encryption
-                    encrypFile.write(cipher_byte);
+                    encrypFile.write(cipher_bytes);
                     encrypFile.close();
                 }catch(IOException e){
                     e.printStackTrace();
@@ -100,13 +100,38 @@ public class Elgamal2 {
             }
             
             if(c.equalsIgnoreCase("decryption")){
-                //get encryption file
+                //Read Encryption File
+                System.out.print("Encryption File Path: ");
+                String encrypFilePath = sc.nextLine();
+
+                //Set Output File Path
+                System.out.print("Output File Path: ");
+                String decryptFilePath = sc.nextLine();
                 
-                //get self private key
-
-                //create decryp file
-
+                //Read Public Key File
+                System.out.print("Public Key File Path: ");
+                String publicFilePath = sc.nextLine();
+                
+                //Read Prime Number
+                BigInteger primeNum = readFile(publicFilePath)[0][0];
+                // System.out.println("Prime = " + primeNum);
+                
+                //Read Private Key File
+                System.out.print("Private Key File Path: ");
+                String privateFilePath = sc.nextLine();
+                BigInteger privateKey = readFile(privateFilePath)[0][0];
+                
                 System.out.println("    Decryption Process ...");
+                try {
+                    FileOutputStream decryptFile = new FileOutputStream(decryptFilePath);
+                    byte[] cipher_bytes = Files.readAllBytes(Paths.get(encrypFilePath));
+                    byte[] message_bytes = decryption(cipher_bytes, primeNum, privateKey);
+                    decryptFile.write(message_bytes);
+                    decryptFile.close();
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 System.out.println("<<< Decryption Finish >>>");
                 
             }
@@ -510,5 +535,75 @@ public class Elgamal2 {
             cipher_byte[i] = (byte)temp;
         }
         return cipher_byte;
+    }
+
+    public static byte[] decryption(byte[] cipher_bytes, BigInteger primeNum, BigInteger privateKey){
+        List<Integer> plainList = new ArrayList<>();
+        byte[] p_byteArray = primeNum.toByteArray();
+        
+        //Get a And b From Cipher Bytes
+        for(int i = 0; i < cipher_bytes.length; i+=(p_byteArray.length * 2)){
+
+            /* <----------------------------------------- a -----------------------------------------> */
+
+            //Read Value a From Cipher Bytes
+            byte[] a_array = new byte[p_byteArray.length];
+
+            for(int j = 0; j < p_byteArray.length; j++){
+                a_array[j] = cipher_bytes[i + j];
+            }
+
+            //Get a Value From a Bytes Array
+            BigInteger a = new BigInteger(a_array);
+            
+            /* <---------------------------------------- (a) ----------------------------------------> */
+
+            /* <----------------------------------------- b -----------------------------------------> */
+            
+            //Read Value b From Cipher Bytes
+            byte[] b_array = new byte[p_byteArray.length];
+
+            for(int j = 0; j < p_byteArray.length; j++){
+                b_array[j] = cipher_bytes[(i + p_byteArray.length) + j];
+            }
+
+            //Get b Value From b Bytes Array
+            BigInteger b = new BigInteger(b_array);
+
+            /* <---------------------------------------- (b) ----------------------------------------> */
+
+            /* <-------------------------------- Calulate Plain Text --------------------------------> */
+            
+            // a = a^u mod p
+            a = fastExpo(a, privateKey, primeNum);
+
+            // a = a^-1 mod p
+            a = a.modInverse(primeNum);
+
+            // x = b / a^u mod p
+            BigInteger x = (b.multiply(a)).mod(primeNum);
+
+            /* <------------------------------- (Calulate Plain Text) -------------------------------> */
+
+            // Change Plain Text Byte Value Range Back -128 to 127
+            int plainByte = Integer.valueOf(x.toString());
+
+            if(plainByte > 127){
+                plainByte = -(plainByte - 127);
+            }
+
+            //Add Plain Text Byte in Plain Text List
+            plainList.add(plainByte);
+            
+        }
+
+        // Add Plain Text Byte For Write It To File
+        byte[] plain_bytes = new byte[plainList.size()];
+
+        for(int i = 0; i < plain_bytes.length; i++){
+            plain_bytes[i] = plainList.get(i).byteValue();
+        }
+
+        return plain_bytes;
     }
 }
