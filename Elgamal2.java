@@ -182,13 +182,39 @@ public class Elgamal2 {
             }
 
             if(c.equalsIgnoreCase("verify")){
+                //Read Public Key File
+                System.out.print("Public Key File Path: ");
+                String plainFilePath = sc.nextLine();
+
+                //Read Prime Number
+                BigInteger primeNum = readFile(plainFilePath)[0][0];
+                // System.out.println("Prime = " + primeNum);
+
+                //Read Generator
+                BigInteger generator = readFile(plainFilePath)[1][0];
+                // System.out.println("Generator = " + generator);
+
+                //Read Public Key
+                BigInteger publicKey = readFile(plainFilePath)[2][0];
+                // System.out.println("PublicKey = " + publicKey);
+
+
+                //Get Signature Text File
+                System.out.print("Signature File Path: ");
+                String sigFilePath = sc.nextLine();
+
+                BigInteger setData[][] = readFile(sigFilePath);
+
                 System.out.println("Verifying ...");
+                System.out.println("===================================================================================");
+                verify(generator, publicKey, setData[2][0], setData[0][0], setData[1][0], primeNum);
+                System.out.println("===================================================================================");
                 System.out.println("<<< Verify Finish >>>");
             }
             
             if(c.equalsIgnoreCase("exit"))
             {
-                System.out.println("************ <<< Program Exit >>> ************");
+                System.out.println("****************************************** Program Exit ******************************************");
                 break;
             }
         }
@@ -687,7 +713,7 @@ public class Elgamal2 {
         return result;
     }
 
-    public static boolean verify(BigInteger g, BigInteger pk, BigInteger plain, BigInteger r, BigInteger s, BigInteger p){
+    public static void verify(BigInteger g, BigInteger pk, BigInteger plain, BigInteger r, BigInteger s, BigInteger p){
         // Convert BigInteger to byte array
         byte[] byteArray = plain.toByteArray();
         BigInteger X = hash(byteArray).mod(p);
@@ -703,13 +729,11 @@ public class Elgamal2 {
         System.out.print("R = " + r + "  ");
         System.out.print("S = " + s + "  ");
         if(GpowX.equals(total) == true){
-            System.out.print(" success ");
+            System.out.print(" verify: success");
             System.out.println();
-            return true;
         }else{
-            System.out.print(" verify failed");
+            System.out.print(" verify: failed");
             System.out.println();
-            return false;
         }
     }
 }
