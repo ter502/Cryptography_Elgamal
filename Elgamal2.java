@@ -1,8 +1,15 @@
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class Elgamal2 {
@@ -52,16 +59,43 @@ public class Elgamal2 {
             }
 
             if(c.equalsIgnoreCase("encryption")){
-                //get public key sender
+                //Read Public Key File
+                System.out.print("Public Key File Path: ");
+                String plainFilePath = sc.nextLine();
 
-                //get file
+                //Set Output File Path
+                System.out.print("Output File Path: ");
+                String encryptFilePath = sc.nextLine();
 
-                System.out.println("    Encryption Process ...");
-                
-                //gen k
+                //Read Prime Number
+                BigInteger primeNum = readFile(plainFilePath)[0][0];
+                // System.out.println("Prime = " + primeNum);
 
-                //create file encryption
+                //Read Generator
+                BigInteger generator = readFile(plainFilePath)[1][0];
+                // System.out.println("Generator = " + generator);
 
+                //Read Public Key
+                BigInteger publicKey = readFile(plainFilePath)[2][0];
+                // System.out.println("PublicKey = " + publicKey);
+
+
+                //Get Plain Text File
+                System.out.print("Plain Text File Path: ");
+                String inputFilePath = sc.nextLine();
+
+                System.out.println("Encryption Process ...");
+                try {
+                    byte[] plain_bytes = Files.readAllBytes(Paths.get(inputFilePath));
+                    byte[] cipher_byte = encryption(plain_bytes, primeNum, generator, publicKey);
+                    FileOutputStream encrypFile = new FileOutputStream(encryptFilePath);
+                    
+                    //Create File Encryption
+                    encrypFile.write(cipher_byte);
+                    encrypFile.close();
+                }catch(IOException e){
+                    e.printStackTrace();
+                }
                 System.out.println("<<< Encryption Finish >>>");
             }
             
@@ -346,5 +380,135 @@ public class Elgamal2 {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static BigInteger[][] readFile(String path){
+        // BigInteger setData[][]=new BigInteger[3][plainBytes.length];
+        BigInteger setData[][]=null;
+        
+        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+            String line;
+            BigInteger r[] = null;
+            BigInteger s[] = null;
+            BigInteger X[] = null;
+            List<BigInteger[]> dataList = new ArrayList<>();
+
+            // Read the first line (r)
+            if ((line = reader.readLine()) != null) {
+                String[] values = line.split("\\s+"); // Split line by whitespace
+                r = new BigInteger[values.length];
+                for (int i = 0; i < values.length; i++) {
+                    r[i] = new BigInteger(values[i]);
+                }
+                dataList.add(r);
+                // r = new BigInteger(line);
+                // setData[0]=r;
+            }
+
+            // Read the second line (s)
+            if ((line = reader.readLine()) != null) {
+                String[] values = line.split("\\s+"); // Split line by whitespace
+                s = new BigInteger[values.length];
+                for (int i = 0; i < values.length; i++) {
+                    s[i] = new BigInteger(values[i]);
+                }
+                dataList.add(s);
+                // s = new BigInteger(line);
+                // setData[1]=s;
+            }
+            // Read the third line (s)
+            if ((line = reader.readLine()) != null) {
+                String[] values = line.split("\\s+"); // Split line by whitespace
+                X = new BigInteger[values.length];
+                for (int i = 0; i < values.length; i++) {
+                    X[i] = new BigInteger(values[i]);
+                }
+                dataList.add(X);
+                // X = new BigInteger(line);
+                // setData[2]=X;
+            }
+            // Set the retrieved data into the setData array
+            setData = new BigInteger[dataList.size()][];
+            for (int i = 0; i < dataList.size(); i++) {
+                setData[i] = dataList.get(i);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return setData;
+    }
+
+    public static byte[] encryption(byte[] plain_bytes, BigInteger primeNum, BigInteger generator, BigInteger publicKey){
+        List<Integer> cipherList = new ArrayList<Integer>();
+        byte[] prime_bytes = primeNum.toByteArray();
+
+        for(byte plainByte: plain_bytes){
+            //Generate Random Number K
+            BigInteger k = generateK(primeNum);
+
+            /* <----------------------------------------- a -----------------------------------------> */
+            
+            //Calculate a = g^k mod p
+            BigInteger a = fastExpo(generator, k, primeNum);            
+            
+            //***** Convert a to bytes *****
+            byte[] a_array =  a.toByteArray();
+
+            //Padding 0 To Fill Empty Block In A Byte Array
+            for(int padding = prime_bytes.length - a_array.length; padding > 0; padding--){
+                cipherList.add(0);
+            }
+            //Fill A Bytes Value
+            for(int i = 0; i < a_array.length; i++){
+                cipherList.add((int)a_array[i]);
+            }
+
+            /* <---------------------------------------- (a) ----------------------------------------> */
+            
+            
+            /* <----------------------------------------- b -----------------------------------------> */
+            
+            // Change Plain Text Byte Value To Positive 0 To 255 (Byte Range -128 to 127)
+            int x = (int)plainByte;
+
+            if(x < 0){
+                x = 127 + (x * (-1));
+            }
+            
+            //Calulate b = y^k * x mod p
+            BigInteger y_pow_k = fastExpo(publicKey, k, primeNum);
+            x = x % Integer.valueOf(primeNum.toString());
+            BigInteger b = (y_pow_k.multiply(BigInteger.valueOf(x))).mod(primeNum);
+
+            //***** Convert b to bytes *****
+            byte[] b_array = b.toByteArray();
+
+            //Padding 0 To Fill Empty Block In B Byte Array
+            for(int padding = prime_bytes.length - b_array.length; padding > 0; padding--){
+                cipherList.add(0);
+            }
+            //Fill B Bytes Value
+            for(int i = 0; i < b_array.length; i++){
+                cipherList.add((int)b_array[i]);
+            }
+            /* <---------------------------------------- (b) ----------------------------------------> */
+        }
+
+        // Add a And b in Cipher Bytes For Sending
+        byte[] cipher_byte = new byte[cipherList.size()];
+
+        for(int i = 0; i < cipher_byte.length; i++){
+            //Get Byte Value
+            int temp = cipherList.get(i);
+
+            //Check Byte Value
+            if(temp > 127 || temp <-128){
+                System.out.println("Encryption Byte Value is Overflow !!");
+                break;
+            }
+            cipher_byte[i] = (byte)temp;
+        }
+        return cipher_byte;
     }
 }
