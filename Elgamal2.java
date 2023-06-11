@@ -430,7 +430,7 @@ public class Elgamal2 {
         return publicKey;
     }
 
-    private static void createPrivateFile(String path, BigInteger privateKeyA) {
+    public static void createPrivateFile(String path, BigInteger privateKeyA) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
             //write r on the first line
             writer.write(privateKeyA.toString());
@@ -440,7 +440,7 @@ public class Elgamal2 {
         }
     }
 
-    private static void createHashFile(String path, BigInteger hash) {
+    public static void createHashFile(String path, BigInteger hash) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
             //write r on the first line
             writer.write(hash.toString());
